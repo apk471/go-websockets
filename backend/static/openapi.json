@@ -1,0 +1,69 @@
+{
+  "openapi": "3.0.2",
+  "info": {
+    "title": "Boilerplate REST API - Documentation",
+    "description": "Boilerplate REST API - Documentation",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8080",
+      "description": "Local Server"
+    }
+  ],
+  "paths": {
+    "/status": {
+      "get": {
+        "summary": "Get health",
+        "description": "Get health status",
+        "operationId": "getHealth",
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": ["healthy", "unhealthy"]
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "environment": {
+                      "type": "string"
+                    },
+                    "checks": {
+                      "type": "object",
+                      "properties": {
+                        "database": {
+                          "type": "object",
+                          "properties": {
+                            "status": { "type": "string" },
+                            "response_time": { "type": "string" },
+                            "error": { "type": "string" }
+                          }
+                        },
+                        "redis": {
+                          "type": "object",
+                          "properties": {
+                            "status": { "type": "string" },
+                            "response_time": { "type": "string" },
+                            "error": { "type": "string" }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
