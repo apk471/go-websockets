@@ -1,13 +1,25 @@
-const { useMemo, useRef, useState } = React;
+const { useEffect, useMemo, useRef, useState } = React;
 
 function App() {
   const [wsUrl, setWsUrl] = useState("ws://localhost:8080/ws");
   const [status, setStatus] = useState("disconnected");
   const [message, setMessage] = useState("");
-  const [log, setLog] = useState([]);
+  const [logs, setLogs] = useState([]);
   const socketRef = useRef(null);
+  const logContainerRef = useRef(null);
 
   const isConnected = useMemo(() => status === "connected", [status]);
+
+  const appendLog = (tag, text) => {
+    const timestamp = new Date().toLocaleTimeString();
+    setLogs((prev) => [...prev, { tag, text, timestamp }]);
+  };
+
+  useEffect(() => {
+    if (logContainerRef.current) {
+      logContainerRef.current.scrollTop = logContainerRef.current.scrollHeight;
+    }
+  }, [logs]);
 
   const connect = () => {
     if (socketRef.current) {
@@ -15,27 +27,28 @@ function App() {
     }
 
     setStatus("connecting");
+    appendLog("INFO", `Connecting to ${wsUrl}`);
     const socket = new WebSocket(wsUrl);
     socketRef.current = socket;
 
     socket.onopen = () => {
       setStatus("connected");
-      setLog((prev) => [...prev, "Connected to server"]);
+      appendLog("CONNECTED", "Connected to server");
     };
 
     socket.onclose = () => {
       setStatus("disconnected");
-      setLog((prev) => [...prev, "Disconnected"]);
+      appendLog("DISCONNECTED", "Disconnected from server");
       socketRef.current = null;
     };
 
     socket.onerror = () => {
       setStatus("error");
-      setLog((prev) => [...prev, "WebSocket error"]);
+      appendLog("ERROR", "WebSocket error");
     };
 
     socket.onmessage = (event) => {
-      setLog((prev) => [...prev, `Server: ${event.data}`]);
+      appendLog("SERVER", event.data);
     };
   };
 
@@ -48,7 +61,7 @@ function App() {
 
   const sendMessage = () => {
     if (!socketRef.current || socketRef.current.readyState !== WebSocket.OPEN) {
-      setLog((prev) => [...prev, "Cannot send: socket is not open"]);
+      appendLog("ERROR", "Cannot send: socket is not open");
       return;
     }
 
@@ -58,7 +71,7 @@ function App() {
     }
 
     socketRef.current.send(value);
-    setLog((prev) => [...prev, `You: ${value}`]);
+    appendLog("SENT", value);
     setMessage("");
   };
 
@@ -117,9 +130,15 @@ function App() {
       React.createElement("h2", null, "Client Log"),
       React.createElement(
         "ul",
-        null,
-        log.map((entry, index) =>
-          React.createElement("li", { key: `${entry}-${index}` }, entry)
+        { ref: logContainerRef },
+        logs.map((entry, index) =>
+          React.createElement(
+            "li",
+            { key: `${entry.timestamp}-${index}` },
+            React.createElement("span", { className: "tag" }, `[${entry.tag}]`),
+            React.createElement("span", { className: "msg" }, entry.text),
+            React.createElement("span", { className: "time" }, entry.timestamp)
+          )
         )
       )
     )
