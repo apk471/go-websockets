@@ -32,7 +32,7 @@ type ServerConfig struct {
 	IdleTimeout        int      `koanf:"idle_timeout" validate:"required"`
 	CORSAllowedOrigins []string `koanf:"cors_allowed_origins" validate:"required"`
 }
-
+// Database configuration
 type DatabaseConfig struct {
 	Host            string `koanf:"host" validate:"required"`
 	Port            int    `koanf:"port" validate:"required"`
