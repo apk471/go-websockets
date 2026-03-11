@@ -52,6 +52,7 @@ func NewRouter(s *server.Server, h *handler.Handlers, services *service.Services
 
 	// register system routes
 	registerSystemRoutes(router, h)
+	registerMatchRoutes(router, h)
 
 	// register versioned routes
 	router.Group("/api/v1")
