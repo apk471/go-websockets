@@ -8,4 +8,5 @@ import (
 func registerMatchRoutes(r *echo.Echo, h *handler.Handlers) {
 	matchRouter := r.Group("/matches")
 	matchRouter.GET("/", h.Match.GetMatches)
+	matchRouter.POST("", h.Match.CreateMatch)
 }
