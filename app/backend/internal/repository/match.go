@@ -66,3 +66,44 @@ func (r *MatchRepository) CreateMatch(ctx context.Context, params CreateMatchPar
 
 	return match, nil
 }
+
+func (r *MatchRepository) ListMatches(ctx context.Context, limit int) ([]model.Match, error) {
+	const query = `
+		SELECT id, sport, home_team, away_team, status, start_time, end_time, home_score, away_score, created_at
+		FROM matches
+		ORDER BY created_at DESC
+		LIMIT $1
+	`
+
+	rows, err := r.server.DB.Pool.Query(ctx, query, limit)
+	if err != nil {
+		return nil, fmt.Errorf("listing matches: %w", err)
+	}
+	defer rows.Close()
+
+	matches := make([]model.Match, 0, limit)
+	for rows.Next() {
+		var match model.Match
+		if scanErr := rows.Scan(
+			&match.ID,
+			&match.Sport,
+			&match.HomeTeam,
+			&match.AwayTeam,
+			&match.Status,
+			&match.StartTime,
+			&match.EndTime,
+			&match.HomeScore,
+			&match.AwayScore,
+			&match.CreatedAt,
+		); scanErr != nil {
+			return nil, fmt.Errorf("scanning match row: %w", scanErr)
+		}
+		matches = append(matches, match)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterating match rows: %w", err)
+	}
+
+	return matches, nil
+}
