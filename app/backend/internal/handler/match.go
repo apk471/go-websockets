@@ -26,6 +26,10 @@ type CreateMatchRequest struct {
 	EndTime   *time.Time `json:"endTime" validate:"required"`
 }
 
+type ListMatchesRequest struct {
+	Limit int `query:"limit" validate:"omitempty,min=1,max=100"`
+}
+
 func (r CreateMatchRequest) Validate() error {
 	validate := validator.New()
 	if err := validate.Struct(r); err != nil {
@@ -54,6 +58,11 @@ func (r CreateMatchRequest) Validate() error {
 	return nil
 }
 
+func (r ListMatchesRequest) Validate() error {
+	validate := validator.New()
+	return validate.Struct(r)
+}
+
 func NewMatchHandler(s *server.Server, services *service.Services) *MatchHandler {
 	return &MatchHandler{
 		Handler:      NewHandler(s),
@@ -62,9 +71,12 @@ func NewMatchHandler(s *server.Server, services *service.Services) *MatchHandler
 }
 
 func (h *MatchHandler) GetMatches(c echo.Context) error {
-	return c.JSON(http.StatusOK, map[string]string{
-		"message": "working",
-	})
+	return Handle(
+		h.Handler,
+		h.listMatches,
+		http.StatusOK,
+		&ListMatchesRequest{},
+	)(c)
 }
 
 func (h *MatchHandler) CreateMatch(c echo.Context) error {
@@ -84,4 +96,8 @@ func (h *MatchHandler) createMatch(c echo.Context, req *CreateMatchRequest) (mod
 		StartTime: *req.StartTime,
 		EndTime:   *req.EndTime,
 	})
+}
+
+func (h *MatchHandler) listMatches(c echo.Context, req *ListMatchesRequest) ([]model.Match, error) {
+	return h.matchService.ListMatches(c.Request().Context(), req.Limit)
 }

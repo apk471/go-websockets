@@ -36,3 +36,11 @@ func (s *MatchService) CreateMatch(ctx context.Context, input CreateMatchInput) 
 		EndTime:   input.EndTime,
 	})
 }
+
+func (s *MatchService) ListMatches(ctx context.Context, limit int) ([]model.Match, error) {
+	if limit <= 0 {
+		limit = 50
+	}
+
+	return s.repos.Match.ListMatches(ctx, limit)
+}
