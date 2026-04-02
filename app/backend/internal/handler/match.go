@@ -9,13 +9,14 @@ import (
 	"github.com/apk471/go-boilerplate/internal/server"
 	"github.com/apk471/go-boilerplate/internal/service"
 	"github.com/apk471/go-boilerplate/internal/validation"
-	"github.com/labstack/echo/v4"
 	"github.com/go-playground/validator/v10"
+	"github.com/labstack/echo/v4"
 )
 
 type MatchHandler struct {
 	Handler
 	matchService *service.MatchService
+	websocket    *WebSocketHandler
 }
 
 type CreateMatchRequest struct {
@@ -63,10 +64,11 @@ func (r ListMatchesRequest) Validate() error {
 	return validate.Struct(r)
 }
 
-func NewMatchHandler(s *server.Server, services *service.Services) *MatchHandler {
+func NewMatchHandler(s *server.Server, services *service.Services, websocket *WebSocketHandler) *MatchHandler {
 	return &MatchHandler{
 		Handler:      NewHandler(s),
 		matchService: services.Match,
+		websocket:    websocket,
 	}
 }
 
@@ -89,13 +91,22 @@ func (h *MatchHandler) CreateMatch(c echo.Context) error {
 }
 
 func (h *MatchHandler) createMatch(c echo.Context, req *CreateMatchRequest) (model.Match, error) {
-	return h.matchService.CreateMatch(c.Request().Context(), service.CreateMatchInput{
+	match, err := h.matchService.CreateMatch(c.Request().Context(), service.CreateMatchInput{
 		Sport:     req.Sport,
 		HomeTeam:  req.HomeTeam,
 		AwayTeam:  req.AwayTeam,
 		StartTime: *req.StartTime,
 		EndTime:   *req.EndTime,
 	})
+	if err != nil {
+		return model.Match{}, err
+	}
+
+	if h.websocket != nil {
+		h.websocket.BroadcastMatchCreated(match)
+	}
+
+	return match, nil
 }
 
 func (h *MatchHandler) listMatches(c echo.Context, req *ListMatchesRequest) ([]model.Match, error) {

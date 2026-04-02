@@ -13,10 +13,12 @@ type Handlers struct {
 }
 
 func NewHandlers(s *server.Server, services *service.Services) *Handlers {
+	websocketHandler := NewWebSocketHandler(s)
+
 	return &Handlers{
 		Health:    NewHealthHandler(s),
-		Match:     NewMatchHandler(s, services),
+		Match:     NewMatchHandler(s, services, websocketHandler),
 		OpenAPI:   NewOpenAPIHandler(s),
-		WebSocket: NewWebSocketHandler(s),
+		WebSocket: websocketHandler,
 	}
 }
