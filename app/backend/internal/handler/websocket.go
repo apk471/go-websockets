@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"sync"
 
+	"github.com/apk471/go-boilerplate/internal/model"
 	"github.com/apk471/go-boilerplate/internal/server"
 	"github.com/gorilla/websocket"
 	"github.com/labstack/echo/v4"
@@ -12,6 +13,11 @@ import (
 type wsClient struct {
 	conn    *websocket.Conn
 	writeMu sync.Mutex
+}
+
+type websocketMessage struct {
+	Type string `json:"type"`
+	Data any    `json:"data,omitempty"`
 }
 
 type WebSocketHandler struct {
@@ -47,6 +53,16 @@ func (h *WebSocketHandler) Handle(c echo.Context) error {
 
 	h.server.Logger.Info().Msg("websocket client connected")
 
+	if err := h.writeJSON(client, websocketMessage{
+		Type: "welcome",
+		Data: map[string]string{
+			"message": "welcome",
+		},
+	}); err != nil {
+		h.server.Logger.Error().Err(err).Msg("failed to send websocket welcome message")
+		return nil
+	}
+
 	for {
 		_, payload, readErr := conn.ReadMessage()
 		if readErr != nil {
@@ -67,10 +83,22 @@ func (h *WebSocketHandler) Handle(c echo.Context) error {
 			Str("payload", string(payload)).
 			Msg("received websocket message")
 
-		h.broadcast("received message from client: " + string(payload))
+		h.Broadcast(websocketMessage{
+			Type: "message.received",
+			Data: map[string]string{
+				"message": string(payload),
+			},
+		})
 	}
 
 	return nil
+}
+
+func (h *WebSocketHandler) BroadcastMatchCreated(match model.Match) {
+	h.Broadcast(websocketMessage{
+		Type: "match.created",
+		Data: match,
+	})
 }
 
 func (h *WebSocketHandler) addClient(client *wsClient) {
@@ -85,7 +113,7 @@ func (h *WebSocketHandler) removeClient(conn *websocket.Conn) {
 	delete(h.clients, conn)
 }
 
-func (h *WebSocketHandler) broadcast(message string) {
+func (h *WebSocketHandler) Broadcast(message websocketMessage) {
 	h.clientsMu.RLock()
 	clients := make([]*wsClient, 0, len(h.clients))
 	for _, client := range h.clients {
@@ -94,13 +122,18 @@ func (h *WebSocketHandler) broadcast(message string) {
 	h.clientsMu.RUnlock()
 
 	for _, client := range clients {
-		client.writeMu.Lock()
-		err := client.conn.WriteMessage(websocket.TextMessage, []byte(message))
-		client.writeMu.Unlock()
+		err := h.writeJSON(client, message)
 		if err != nil {
 			h.server.Logger.Error().Err(err).Msg("websocket broadcast write failed")
 			h.removeClient(client.conn)
 			_ = client.conn.Close()
 		}
 	}
+}
+
+func (h *WebSocketHandler) writeJSON(client *wsClient, message websocketMessage) error {
+	client.writeMu.Lock()
+	defer client.writeMu.Unlock()
+
+	return client.conn.WriteJSON(message)
 }
