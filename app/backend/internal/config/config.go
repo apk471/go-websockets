@@ -31,7 +31,22 @@ type ServerConfig struct {
 	WriteTimeout       int      `koanf:"write_timeout" validate:"required"`
 	IdleTimeout        int      `koanf:"idle_timeout" validate:"required"`
 	CORSAllowedOrigins []string `koanf:"cors_allowed_origins" validate:"required"`
+	BodyLimit          string   `koanf:"body_limit"`
+	HTTPRateLimitRPS   float64  `koanf:"http_rate_limit_rps"`
+	HTTPRateLimitBurst int      `koanf:"http_rate_limit_burst"`
+	HTTPRateLimitTTL   int      `koanf:"http_rate_limit_ttl_seconds"`
+	WSHandshakeTimeout int      `koanf:"ws_handshake_timeout_seconds"`
+	WSMaxConnectionsIP int      `koanf:"ws_max_connections_per_ip"`
+	WSMaxMessageBytes  int64    `koanf:"ws_max_message_bytes"`
+	WSPingInterval     int      `koanf:"ws_ping_interval_seconds"`
+	WSPongWait         int      `koanf:"ws_pong_wait_seconds"`
+	WSWriteTimeout     int      `koanf:"ws_write_timeout_seconds"`
+	WSUpgradeRateRPS   float64  `koanf:"ws_upgrade_rate_limit_rps"`
+	WSUpgradeRateBurst int      `koanf:"ws_upgrade_rate_limit_burst"`
+	WSMessageRateRPS   float64  `koanf:"ws_message_rate_limit_rps"`
+	WSMessageRateBurst int      `koanf:"ws_message_rate_limit_burst"`
 }
+
 // Database configuration
 type DatabaseConfig struct {
 	Host            string `koanf:"host" validate:"required"`
@@ -88,6 +103,8 @@ func LoadConfig() (*Config, error) {
 		mainConfig.Observability = DefaultObservabilityConfig()
 	}
 
+	applyServerSecurityDefaults(&mainConfig.Server)
+
 	// Override service name and environment from primary config
 	mainConfig.Observability.ServiceName = "boilerplate"
 	mainConfig.Observability.Environment = mainConfig.Primary.Env
@@ -98,4 +115,51 @@ func LoadConfig() (*Config, error) {
 	}
 
 	return mainConfig, nil
+}
+
+func applyServerSecurityDefaults(cfg *ServerConfig) {
+	if cfg.BodyLimit == "" {
+		cfg.BodyLimit = "1M"
+	}
+
+	if cfg.HTTPRateLimitRPS <= 0 {
+		cfg.HTTPRateLimitRPS = 10
+	}
+	if cfg.HTTPRateLimitBurst <= 0 {
+		cfg.HTTPRateLimitBurst = 20
+	}
+	if cfg.HTTPRateLimitTTL <= 0 {
+		cfg.HTTPRateLimitTTL = 300
+	}
+
+	if cfg.WSHandshakeTimeout <= 0 {
+		cfg.WSHandshakeTimeout = 5
+	}
+	if cfg.WSMaxConnectionsIP <= 0 {
+		cfg.WSMaxConnectionsIP = 5
+	}
+	if cfg.WSMaxMessageBytes <= 0 {
+		cfg.WSMaxMessageBytes = 4096
+	}
+	if cfg.WSPingInterval <= 0 {
+		cfg.WSPingInterval = 25
+	}
+	if cfg.WSPongWait <= 0 {
+		cfg.WSPongWait = 60
+	}
+	if cfg.WSWriteTimeout <= 0 {
+		cfg.WSWriteTimeout = 10
+	}
+	if cfg.WSUpgradeRateRPS <= 0 {
+		cfg.WSUpgradeRateRPS = 0.5
+	}
+	if cfg.WSUpgradeRateBurst <= 0 {
+		cfg.WSUpgradeRateBurst = 3
+	}
+	if cfg.WSMessageRateRPS <= 0 {
+		cfg.WSMessageRateRPS = 1
+	}
+	if cfg.WSMessageRateBurst <= 0 {
+		cfg.WSMessageRateBurst = 5
+	}
 }
