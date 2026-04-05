@@ -1,9 +1,37 @@
-So basically what i want to implement is a websocket implementation where in one Match event gets trigger to many users without them refreshing i.e in short FAN OUT in realtime
+1. i need to create a commentary router group with /matches/:id/commentary as one group 
+2. Create schemas with the below schemas also with a new db table called as commentary
+export const listCommentaryQuerySchema = z.object({
+  limit: z.coerce.number().int().positive().max(100).optional(),
+});
 
-First let us do something like:
+export const createCommentarySchema = z.object({
+  minute: z.number().int().nonnegative(),
+  sequence: z.number().int().optional(),
+  period: z.string().optional(),
+  eventType: z.string().optional(),
+  actor: z.string().optional(),
+  team: z.string().optional(),
+  message: z.string().min(1),
+  metadata: z.record(z.string(), z.any()).optional(),
+  tags: z.array(z.string()).optional(),
+});
 
-1. create a attach websocketserver which uses the same port as of our REST api server but with a path of '/ws' all the request will be using this websocketserver
+3. create two main routes both in the commentary group GET / route and the POST / route
 
-2. Let us just send a json message as "welcome" to all our connected clients first (whenever they connect first they should get a welcome message)
+GET / -> 
+1. Validate req.params using matchldParamSchema and req.query using
+listCommentaryQuerySchema.
+2. Fetch data from the "commentary" table where "matchid" equals the ID from
+params.
+3. Order the results by "createdAt" in descending order so the newest events
+appear first.
+4. Apply a limit based on the query parameter (defaulting to 100 with a
+MAX_LIMIT safety cap).
+5. Use ES Modules and handle errors with try/catch
 
-3. Make changes to the main.go HOST PORT then go into the list handler where we create the matches and hook that with this WS to broadcast all the matches in realtime to all the clients connected (so basically when we hit the create match endpoint with any of our WS client connected as soon as i hit the endpoint the create match should reflect there)
+
+POST / -> this is used to create a commetary of a particular match
+1. validate req params using matchldParamSchema and req.body using
+createCommentaryShcmea. insert the data into the commentary table and
+return the result
+
