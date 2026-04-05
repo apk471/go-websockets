@@ -96,7 +96,22 @@ func (global *GlobalMiddlewares) Recover() echo.MiddlewareFunc {
 }
 
 func (global *GlobalMiddlewares) Secure() echo.MiddlewareFunc {
-	return middleware.Secure()
+	config := middleware.SecureConfig{
+		XFrameOptions:      "DENY",
+		ContentTypeNosniff: "nosniff",
+		XSSProtection:      "1; mode=block",
+		ReferrerPolicy:     "strict-origin-when-cross-origin",
+	}
+
+	if global.server.Config.Primary.Env != "local" {
+		config.HSTSMaxAge = 31536000
+	}
+
+	return middleware.SecureWithConfig(config)
+}
+
+func (global *GlobalMiddlewares) BodyLimit() echo.MiddlewareFunc {
+	return middleware.BodyLimit(global.server.Config.Server.BodyLimit)
 }
 
 func (global *GlobalMiddlewares) GlobalErrorHandler(err error, c echo.Context) {

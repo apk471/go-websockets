@@ -22,6 +22,15 @@ func NewForbiddenError(message string, override bool) *HTTPError {
 	}
 }
 
+func NewTooManyRequestsError(message string, override bool) *HTTPError {
+	return &HTTPError{
+		Code:     MakeUpperCaseWithUnderscores(http.StatusText(http.StatusTooManyRequests)),
+		Message:  message,
+		Status:   http.StatusTooManyRequests,
+		Override: override,
+	}
+}
+
 func NewBadRequestError(message string, override bool, code *string, errors []FieldError, action *Action) *HTTPError {
 	formattedCode := MakeUpperCaseWithUnderscores(http.StatusText(http.StatusBadRequest))
 
