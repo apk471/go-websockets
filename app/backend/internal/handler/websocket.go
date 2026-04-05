@@ -157,6 +157,13 @@ func (h *WebSocketHandler) BroadcastMatchCreated(match model.Match) {
 	})
 }
 
+func (h *WebSocketHandler) BroadcastCommentaryCreated(commentary model.Commentary) {
+	h.Broadcast(websocketMessage{
+		Type: "commentary.created",
+		Data: commentary,
+	})
+}
+
 func (h *WebSocketHandler) addClient(client *wsClient) {
 	h.clientsMu.Lock()
 	defer h.clientsMu.Unlock()
