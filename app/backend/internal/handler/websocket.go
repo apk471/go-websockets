@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"encoding/json"
 	"errors"
 	"net"
 	"net/http"
@@ -17,39 +18,49 @@ import (
 )
 
 type wsClient struct {
-	conn    *websocket.Conn
-	ip      string
-	writeMu sync.Mutex
+	conn          *websocket.Conn
+	ip            string
+	writeMu       sync.Mutex
+	subscriptions map[int]struct{}
 }
 
 type websocketMessage struct {
-	Type string `json:"type"`
-	Data any    `json:"data,omitempty"`
+	Type    string `json:"type"`
+	MatchID *int   `json:"matchId,omitempty"`
+	Message string `json:"message,omitempty"`
+	Data    any    `json:"data,omitempty"`
+}
+
+type websocketClientMessage struct {
+	Type    string `json:"type"`
+	MatchID *int   `json:"matchId,omitempty"`
 }
 
 type WebSocketHandler struct {
-	server         *server.Server
-	rateLimit      *appMiddleware.RateLimitMiddleware
-	upgrader       websocket.Upgrader
-	clients        map[*websocket.Conn]*wsClient
-	clientsByIP    map[string]int
-	clientsMu      sync.RWMutex
-	pingInterval   time.Duration
-	pongWait       time.Duration
-	writeTimeout   time.Duration
-	maxMessageSize int64
+	server                *server.Server
+	rateLimit             *appMiddleware.RateLimitMiddleware
+	upgrader              websocket.Upgrader
+	clients               map[*websocket.Conn]*wsClient
+	commentarySubscribers map[int]map[*websocket.Conn]*wsClient
+	clientsByIP           map[string]int
+	clientsMu             sync.RWMutex
+	pingInterval          time.Duration
+	pongWait              time.Duration
+	writeTimeout          time.Duration
+	maxMessageSize        int64
 }
 
 func NewWebSocketHandler(s *server.Server) *WebSocketHandler {
 	handler := &WebSocketHandler{
-		server:         s,
-		rateLimit:      appMiddleware.NewRateLimitMiddleware(s),
-		clients:        make(map[*websocket.Conn]*wsClient),
-		clientsByIP:    make(map[string]int),
-		pingInterval:   time.Duration(s.Config.Server.WSPingInterval) * time.Second,
-		pongWait:       time.Duration(s.Config.Server.WSPongWait) * time.Second,
-		writeTimeout:   time.Duration(s.Config.Server.WSWriteTimeout) * time.Second,
-		maxMessageSize: s.Config.Server.WSMaxMessageBytes,
+		server:                s,
+		rateLimit:             appMiddleware.NewRateLimitMiddleware(s),
+		clients:               make(map[*websocket.Conn]*wsClient),
+		commentarySubscribers: make(map[int]map[*websocket.Conn]*wsClient),
+		clientsByIP:           make(map[string]int),
+		pingInterval:          time.Duration(s.Config.Server.WSPingInterval) * time.Second,
+		pongWait:              time.Duration(s.Config.Server.WSPongWait) * time.Second,
+		writeTimeout:          time.Duration(s.Config.Server.WSWriteTimeout) * time.Second,
+		maxMessageSize:        s.Config.Server.WSMaxMessageBytes,
 	}
 
 	handler.upgrader = websocket.Upgrader{
@@ -88,7 +99,11 @@ func (h *WebSocketHandler) Handle(c echo.Context) error {
 	}
 	defer conn.Close()
 
-	client := &wsClient{conn: conn, ip: wsIdentifier(ip)}
+	client := &wsClient{
+		conn:          conn,
+		ip:            wsIdentifier(ip),
+		subscriptions: make(map[int]struct{}),
+	}
 	h.addClient(client)
 	defer h.removeClient(conn, client.ip)
 
@@ -101,10 +116,8 @@ func (h *WebSocketHandler) Handle(c echo.Context) error {
 	h.server.Logger.Info().Msg("websocket client connected")
 
 	if err := h.writeJSON(client, websocketMessage{
-		Type: "welcome",
-		Data: map[string]string{
-			"message": "welcome",
-		},
+		Type:    "welcome",
+		Message: "welcome",
 	}); err != nil {
 		h.server.Logger.Error().Err(err).Msg("failed to send websocket welcome message")
 		return nil
@@ -128,7 +141,12 @@ func (h *WebSocketHandler) Handle(c echo.Context) error {
 			break
 		}
 
-		if messageType != websocket.TextMessage && messageType != websocket.BinaryMessage {
+		if messageType == websocket.BinaryMessage {
+			_ = h.writeControl(client, websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseUnsupportedData, "binary messages are not supported"))
+			break
+		}
+
+		if messageType != websocket.TextMessage {
 			continue
 		}
 
@@ -138,13 +156,20 @@ func (h *WebSocketHandler) Handle(c echo.Context) error {
 			break
 		}
 
-		h.server.Logger.Warn().
-			Int("bytes", len(payload)).
-			Str("ip", ip).
-			Msg("dropping unsupported websocket client message")
+		if err := h.handleMessage(client, payload); err != nil {
+			h.server.Logger.Warn().
+				Err(err).
+				Str("ip", ip).
+				Msg("websocket message handling failed")
 
-		_ = h.writeControl(client, websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseUnsupportedData, "client messages are not supported"))
-		break
+			if writeErr := h.writeJSON(client, websocketMessage{
+				Type:    "error",
+				Message: err.Error(),
+			}); writeErr != nil {
+				h.server.Logger.Warn().Err(writeErr).Msg("failed to send websocket error message")
+				break
+			}
+		}
 	}
 
 	return nil
@@ -158,7 +183,7 @@ func (h *WebSocketHandler) BroadcastMatchCreated(match model.Match) {
 }
 
 func (h *WebSocketHandler) BroadcastCommentaryCreated(commentary model.Commentary) {
-	h.Broadcast(websocketMessage{
+	h.broadcastToCommentarySubscribers(commentary.MatchID, websocketMessage{
 		Type: "commentary.created",
 		Data: commentary,
 	})
@@ -173,7 +198,17 @@ func (h *WebSocketHandler) addClient(client *wsClient) {
 func (h *WebSocketHandler) removeClient(conn *websocket.Conn, ip string) {
 	h.clientsMu.Lock()
 	defer h.clientsMu.Unlock()
+	client := h.clients[conn]
 	delete(h.clients, conn)
+	if client != nil {
+		for matchID := range client.subscriptions {
+			subscribers := h.commentarySubscribers[matchID]
+			delete(subscribers, conn)
+			if len(subscribers) == 0 {
+				delete(h.commentarySubscribers, matchID)
+			}
+		}
+	}
 	identifier := wsIdentifier(ip)
 	if h.clientsByIP[identifier] > 0 {
 		h.clientsByIP[identifier]--
@@ -195,6 +230,24 @@ func (h *WebSocketHandler) Broadcast(message websocketMessage) {
 		err := h.writeJSON(client, message)
 		if err != nil {
 			h.server.Logger.Error().Err(err).Msg("websocket broadcast write failed")
+			h.removeClient(client.conn, client.ip)
+			_ = client.conn.Close()
+		}
+	}
+}
+
+func (h *WebSocketHandler) broadcastToCommentarySubscribers(matchID int, message websocketMessage) {
+	h.clientsMu.RLock()
+	subscribers := h.commentarySubscribers[matchID]
+	clients := make([]*wsClient, 0, len(subscribers))
+	for _, client := range subscribers {
+		clients = append(clients, client)
+	}
+	h.clientsMu.RUnlock()
+
+	for _, client := range clients {
+		if err := h.writeJSON(client, message); err != nil {
+			h.server.Logger.Error().Err(err).Int("match_id", matchID).Msg("websocket commentary broadcast write failed")
 			h.removeClient(client.conn, client.ip)
 			_ = client.conn.Close()
 		}
@@ -317,4 +370,62 @@ func stripPort(host string) string {
 	}
 
 	return host
+}
+
+func (h *WebSocketHandler) handleMessage(client *wsClient, payload []byte) error {
+	var message websocketClientMessage
+	if err := json.Unmarshal(payload, &message); err != nil {
+		return errs.NewBadRequestError("Invalid websocket message payload", false, nil, nil, nil)
+	}
+
+	switch message.Type {
+	case "subscribe":
+		if message.MatchID == nil || *message.MatchID <= 0 {
+			return errs.NewBadRequestError("matchId is required", false, nil, nil, nil)
+		}
+		h.subscribe(client, *message.MatchID)
+		matchID := *message.MatchID
+		return h.writeJSON(client, websocketMessage{
+			Type:    "subscribed",
+			MatchID: &matchID,
+			Message: "subscribed",
+		})
+	case "unsubscribe":
+		if message.MatchID == nil || *message.MatchID <= 0 {
+			return errs.NewBadRequestError("matchId is required", false, nil, nil, nil)
+		}
+		h.unsubscribe(client, *message.MatchID)
+		matchID := *message.MatchID
+		return h.writeJSON(client, websocketMessage{
+			Type:    "unsubscribed",
+			MatchID: &matchID,
+			Message: "unsubscribed",
+		})
+	default:
+		return errs.NewBadRequestError("Unsupported websocket message type", false, nil, nil, nil)
+	}
+}
+
+func (h *WebSocketHandler) subscribe(client *wsClient, matchID int) {
+	h.clientsMu.Lock()
+	defer h.clientsMu.Unlock()
+
+	if h.commentarySubscribers[matchID] == nil {
+		h.commentarySubscribers[matchID] = make(map[*websocket.Conn]*wsClient)
+	}
+
+	h.commentarySubscribers[matchID][client.conn] = client
+	client.subscriptions[matchID] = struct{}{}
+}
+
+func (h *WebSocketHandler) unsubscribe(client *wsClient, matchID int) {
+	h.clientsMu.Lock()
+	defer h.clientsMu.Unlock()
+
+	delete(client.subscriptions, matchID)
+	subscribers := h.commentarySubscribers[matchID]
+	delete(subscribers, client.conn)
+	if len(subscribers) == 0 {
+		delete(h.commentarySubscribers, matchID)
+	}
 }
