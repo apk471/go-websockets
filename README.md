@@ -13,16 +13,45 @@ This project exposes REST endpoints for matches and match commentary, then pushe
 - Apply basic HTTP and WS security protections
 - Include request logging, tracing hooks, health checks, and OpenAPI docs
 
-## Project Layout
+## Project Structure
 
-```text
-go-websockets/
-├── app/
-│   └── backend/        # Go API and WebSocket server
-├── packages/           # Shared package workspace
-├── package.json        # Turbo/Bun workspace entry
+```
+go-websocket/
+├── backend/                    # Go API server
+│   ├── cmd/go-websocket/     # main entry
+│   ├── internal/
+│   │   ├── config/             # config structs, load, observability
+│   │   ├── database/           # pgx pool, migrations (embed)
+│   │   ├── errs/               # HTTP error types and constructors
+│   │   ├── handler/            # health, openapi, base (typed Handle/HandleNoContent/HandleFile)
+│   │   ├── lib/
+│   │   │   ├── email/          # Resend client, templates, welcome email
+│   │   │   ├── jobs/           # Asynq job service, welcome email task
+│   │   │   └── utils/          # small helpers (e.g. PrintJSON)
+│   │   ├── logger/             # zerolog + New Relic LoggerService, pgx logger
+│   │   ├── middleware/         # CORS, secure, request ID, tracing, context, auth, rate limit, recover, global error
+│   │   ├── repository/         # repository layer (currently empty struct)
+│   │   ├── router/             # Echo router, system routes registration
+│   │   ├── server/             # Server struct (config, DB, Redis, Job, HTTP server)
+│   │   ├── service/            # Auth (Clerk), Job service ref
+│   │   ├── sqlerr/             # PG error → HTTP error mapping
+│   │   └── validation/         # BindAndValidate, Validatable, tag→message mapping
+│   ├── static/                 # openapi.html, openapi.json (from packages/openapi gen)
+│   ├── templates/emails/       # HTML email templates (e.g. welcome.html)
+│   ├── Taskfile.yml            # run, migrations:new, migrations:up, tidy
+│   ├── .golangci.yml           # linter config
+│   ├── go.mod
+│   └── go.sum
+├── packages/
+│   ├── openapi/                # ts-rest contracts, OpenAPI 3 generation, writes openapi.json
+│   ├── zod/                    # shared Zod schemas (e.g. health response)
+│   └── emails/                 # (optional) React email templates
+├── package.json                # workspace root, turbo scripts
+├── turbo.json
 └── README.md
 ```
+
+---
 
 ## Backend Highlights
 
