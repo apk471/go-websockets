@@ -8,10 +8,10 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/apk471/go-boilerplate/internal/config"
+	"github.com/ayush-amin/go-boilerplate/internal/config"
 	"github.com/rs/zerolog"
 
-	loggerConfig "github.com/apk471/go-boilerplate/internal/logger"
+	loggerConfig "github.com/ayush-amin/go-boilerplate/internal/logger"
 	pgxzero "github.com/jackc/pgx-zerolog"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"

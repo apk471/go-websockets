@@ -9,10 +9,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/apk471/go-boilerplate/internal/errs"
-	appMiddleware "github.com/apk471/go-boilerplate/internal/middleware"
-	"github.com/apk471/go-boilerplate/internal/model"
-	"github.com/apk471/go-boilerplate/internal/server"
+	"github.com/ayush-amin/go-boilerplate/internal/errs"
+	appMiddleware "github.com/ayush-amin/go-boilerplate/internal/middleware"
+	"github.com/ayush-amin/go-boilerplate/internal/model"
+	"github.com/ayush-amin/go-boilerplate/internal/server"
 	"github.com/gorilla/websocket"
 	"github.com/labstack/echo/v4"
 )

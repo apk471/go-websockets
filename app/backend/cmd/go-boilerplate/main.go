@@ -8,14 +8,14 @@ import (
 	"os/signal"
 	"time"
 
-	"github.com/apk471/go-boilerplate/internal/config"
-	"github.com/apk471/go-boilerplate/internal/database"
-	"github.com/apk471/go-boilerplate/internal/handler"
-	"github.com/apk471/go-boilerplate/internal/logger"
-	"github.com/apk471/go-boilerplate/internal/repository"
-	"github.com/apk471/go-boilerplate/internal/router"
-	"github.com/apk471/go-boilerplate/internal/server"
-	"github.com/apk471/go-boilerplate/internal/service"
+	"github.com/ayush-amin/go-boilerplate/internal/config"
+	"github.com/ayush-amin/go-boilerplate/internal/database"
+	"github.com/ayush-amin/go-boilerplate/internal/handler"
+	"github.com/ayush-amin/go-boilerplate/internal/logger"
+	"github.com/ayush-amin/go-boilerplate/internal/repository"
+	"github.com/ayush-amin/go-boilerplate/internal/router"
+	"github.com/ayush-amin/go-boilerplate/internal/server"
+	"github.com/ayush-amin/go-boilerplate/internal/service"
 )
 
 const DefaultContextTimeout = 30

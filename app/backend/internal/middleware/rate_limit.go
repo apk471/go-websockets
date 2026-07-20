@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/apk471/go-boilerplate/internal/server"
+	"github.com/ayush-amin/go-boilerplate/internal/server"
 	"github.com/labstack/echo/v4"
 	"golang.org/x/time/rate"
 )

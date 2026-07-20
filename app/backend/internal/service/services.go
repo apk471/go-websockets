@@ -1,9 +1,9 @@
 package service
 
 import (
-	job "github.com/apk471/go-boilerplate/internal/lib/jobs"
-	"github.com/apk471/go-boilerplate/internal/repository"
-	"github.com/apk471/go-boilerplate/internal/server"
+	job "github.com/ayush-amin/go-boilerplate/internal/lib/jobs"
+	"github.com/ayush-amin/go-boilerplate/internal/repository"
+	"github.com/ayush-amin/go-boilerplate/internal/server"
 )
 
 type Services struct {

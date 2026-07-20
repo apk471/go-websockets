@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/apk471/go-boilerplate/internal/errs"
-	"github.com/apk471/go-boilerplate/internal/server"
+	"github.com/ayush-amin/go-boilerplate/internal/errs"
+	"github.com/ayush-amin/go-boilerplate/internal/server"
 	"github.com/clerk/clerk-sdk-go/v2"
 	clerkhttp "github.com/clerk/clerk-sdk-go/v2/http"
 	"github.com/labstack/echo/v4"

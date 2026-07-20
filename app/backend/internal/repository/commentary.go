@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/apk471/go-boilerplate/internal/model"
-	"github.com/apk471/go-boilerplate/internal/server"
+	"github.com/ayush-amin/go-boilerplate/internal/model"
+	"github.com/ayush-amin/go-boilerplate/internal/server"
 )
 
 type CreateCommentaryParams struct {
