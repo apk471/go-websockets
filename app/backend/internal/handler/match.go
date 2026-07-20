@@ -5,10 +5,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/apk471/go-boilerplate/internal/model"
-	"github.com/apk471/go-boilerplate/internal/server"
-	"github.com/apk471/go-boilerplate/internal/service"
-	"github.com/apk471/go-boilerplate/internal/validation"
+	"github.com/ayush-amin/go-boilerplate/internal/model"
+	"github.com/ayush-amin/go-boilerplate/internal/server"
+	"github.com/ayush-amin/go-boilerplate/internal/service"
+	"github.com/ayush-amin/go-boilerplate/internal/validation"
 	"github.com/go-playground/validator/v10"
 	"github.com/labstack/echo/v4"
 )

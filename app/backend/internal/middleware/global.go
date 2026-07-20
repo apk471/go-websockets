@@ -4,9 +4,9 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/apk471/go-boilerplate/internal/errs"
-	"github.com/apk471/go-boilerplate/internal/server"
-	"github.com/apk471/go-boilerplate/internal/sqlerr"
+	"github.com/ayush-amin/go-boilerplate/internal/errs"
+	"github.com/ayush-amin/go-boilerplate/internal/server"
+	"github.com/ayush-amin/go-boilerplate/internal/sqlerr"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/rs/zerolog"

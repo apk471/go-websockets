@@ -3,9 +3,9 @@ package handler
 import (
 	"time"
 
-	"github.com/apk471/go-boilerplate/internal/middleware"
-	"github.com/apk471/go-boilerplate/internal/server"
-	"github.com/apk471/go-boilerplate/internal/validation"
+	"github.com/ayush-amin/go-boilerplate/internal/middleware"
+	"github.com/ayush-amin/go-boilerplate/internal/server"
+	"github.com/ayush-amin/go-boilerplate/internal/validation"
 	"github.com/labstack/echo/v4"
 	"github.com/newrelic/go-agent/v3/integrations/nrpkgerrors"
 	"github.com/newrelic/go-agent/v3/newrelic"

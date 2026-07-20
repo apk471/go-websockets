@@ -1,7 +1,7 @@
 package router
 
 import (
-	"github.com/apk471/go-boilerplate/internal/handler"
+	"github.com/ayush-amin/go-boilerplate/internal/handler"
 
 	"github.com/labstack/echo/v4"
 )

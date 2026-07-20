@@ -1,4 +1,4 @@
-module github.com/apk471/go-boilerplate
+module github.com/ayush-amin/go-boilerplate
 
 go 1.25.6
 

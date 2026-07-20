@@ -3,8 +3,8 @@ package middleware
 import (
 	"context"
 
-	"github.com/apk471/go-boilerplate/internal/logger"
-	"github.com/apk471/go-boilerplate/internal/server"
+	"github.com/ayush-amin/go-boilerplate/internal/logger"
+	"github.com/ayush-amin/go-boilerplate/internal/server"
 	"github.com/labstack/echo/v4"
 	"github.com/newrelic/go-agent/v3/newrelic"
 	"github.com/rs/zerolog"

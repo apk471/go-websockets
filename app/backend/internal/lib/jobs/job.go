@@ -1,7 +1,7 @@
 package jobs
 
 import (
-	"github.com/apk471/go-boilerplate/internal/config"
+	"github.com/ayush-amin/go-boilerplate/internal/config"
 	"github.com/hibiken/asynq"
 	"github.com/rs/zerolog"
 )

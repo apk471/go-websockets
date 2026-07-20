@@ -1,10 +1,10 @@
 package router
 
 import (
-	"github.com/apk471/go-boilerplate/internal/handler"
-	"github.com/apk471/go-boilerplate/internal/middleware"
-	"github.com/apk471/go-boilerplate/internal/server"
-	"github.com/apk471/go-boilerplate/internal/service"
+	"github.com/ayush-amin/go-boilerplate/internal/handler"
+	"github.com/ayush-amin/go-boilerplate/internal/middleware"
+	"github.com/ayush-amin/go-boilerplate/internal/server"
+	"github.com/ayush-amin/go-boilerplate/internal/service"
 	"github.com/labstack/echo/v4"
 )
 

@@ -5,8 +5,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/apk471/go-boilerplate/internal/model"
-	"github.com/apk471/go-boilerplate/internal/repository"
+	"github.com/ayush-amin/go-boilerplate/internal/model"
+	"github.com/ayush-amin/go-boilerplate/internal/repository"
 )
 
 type CreateMatchInput struct {
